@@ -17,11 +17,11 @@ if __name__ == "__main__":
         image_array = np.array([image_array])
         return image_array
 
-    # original array (grayscale image with shape (1, 10, 10))
+    # original array (grayscale image with shape (1, 96, 96, 1))
     image_array = image_to_np_array()
 
     # check the shape and dtype
-    print(image_array.shape)  # Now the shape should be (1, 10, 10, 3)
+    print(image_array.shape)  # Should print (1, 96, 96, 1)
     print(image_array.dtype)  # Should print float32
 
     # convert the NumPy array to a string representation for writing to a file
