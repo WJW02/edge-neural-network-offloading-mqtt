@@ -64,7 +64,7 @@ class ModelManager:
         logger.debug(f"Loading model from path: {model_path}")
         try:
             self.model_path = model_path
-            self.model = tf.keras.models.load_model(model_path)
+            self.model = tf.keras.models.load_model(f'../models/test/{model_path}')
             self.num_layers = len(self.model.layers)
         except Exception as e:
             print(f"Error loading model: {e}")
@@ -139,6 +139,6 @@ class ModelManager:
             self.save_path = save_path
         self.save_path = self.save_path[:-1] if self.save_path[-1] == "/" else self.save_path
         inference_times = self.inference_times
-        with open(f"{self.save_path}/{OffloadingDataFiles.data_file_path_edge}.json", "w") as f:
+        with open(f"{self.save_path}/{OffloadingDataFiles.data_file_path_edge}", "w") as f:
             json.dump(inference_times, f, indent=4)
         logger.debug(f"Inference times saved")

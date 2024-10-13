@@ -18,9 +18,10 @@ dependencies = [
     "pandas~=2.2.2",
     "tqdm~=4.66.4",
     "scipy~=1.14.0",
-    "tensorflow",
+    "tensorflow==2.15.0",
     "h5py==3.11.0",
     "ntplib",
+    "pillow",
 ]
 
 # Define optional dependencies like testing and CUDA support
