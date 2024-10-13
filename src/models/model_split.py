@@ -23,11 +23,11 @@ def to_tflite(keras_model: Model, save: bool, save_dir: str, name: str) -> bytes
             f.write(tflite_model)
     return tflite_model
 
-def load_keras(name: str, dir_path: str) -> Model:
+def load_h5(name: str, dir_path: str) -> Model:
     return tf.keras.models.load_model(f'{dir_path}/{name}.h5')
 
 
-def create_keras_submodels(save_dir: str, model: Model) -> dict:
+def create_h5_submodels(save_dir: str, model: Model) -> dict:
     submodels = {}
 
     start_layer_index = 0
@@ -63,11 +63,11 @@ if __name__ == "__main__":
     init_folders(main_folder)
 
     # load the model
-    model = load_keras(name="test_model", dir_path=main_folder)
+    model = load_h5(name="test_model", dir_path=main_folder)
 
     # creates and save submodels '.tflite'
     print("creating submodels ...")
-    submodels = create_keras_submodels(model=model, save_dir=f"{main_folder}/layers/h5")
+    submodels = create_h5_submodels(model=model, save_dir=f"{main_folder}/layers/h5")
 
     # creates and save submodels '.h'
     for layer_index, item in enumerate(submodels.items()):
