@@ -70,21 +70,28 @@ if __name__ == "__main__":
     submodels = create_h5_submodels(model=model, save_dir=f"{main_folder}/layers/h5")
 
     # creates and save submodels '.h'
-    for layer_index, item in enumerate(submodels.items()):
-        model_name, model = item
-        # convert the model content to a C array format
-        print(f"created [tflite] submodel for layer: {layer_index}")
-        tflite_bytes = to_tflite(model, save=True, save_dir=f"{main_folder}/layers/tflite",
-                                 name=f"submodel_{layer_index}")
+    macro_definition = '#define LOAD_LAYER() '
 
-        # convert the model content to a C array format
-        model_array = ", ".join([str(b) for b in tflite_bytes])
+    with open(f'{main_folder}/layers/h/layers.h', 'w') as super_header_file:
+        for layer_index, item in enumerate(submodels.items()):
+            model_name, model = item
+            # convert the model content to a C array format
+            print(f"created [tflite] submodel for layer: {layer_index}")
+            tflite_bytes = to_tflite(model, save=True, save_dir=f"{main_folder}/layers/tflite",
+                                    name=f"submodel_{layer_index}")
 
-        # write the C header file
-        print(f"created [h] submodel for layer: {layer_index}")
-        with open(f'{main_folder}/layers/h/layer_{layer_index}.h', 'w') as header_file:
-            header_file.write('#pragma once\n\n')
-            header_file.write('#include <cstdint>\n\n')
-            header_file.write('const uint8_t layer_' + str(layer_index) + '[] = {\n')
-            header_file.write(model_array)
-            header_file.write('\n};\n')
+            # convert the model content to a C array format
+            model_array = ", ".join([str(b) for b in tflite_bytes])
+
+            # write the C header file
+            print(f"created [h] submodel for layer: {layer_index}")
+            with open(f'{main_folder}/layers/h/layer_{layer_index}.h', 'w') as header_file:
+                header_file.write('#pragma once\n\n')
+                header_file.write('#include <cstdint>\n\n')
+                header_file.write('const uint8_t layer_' + str(layer_index) + '[] = {\n')
+                header_file.write(model_array)
+                header_file.write('\n};\n')
+
+            super_header_file.write('#include "layer_' + str(layer_index) + '.h"\n')
+            macro_definition += 'if(layer_name.equals("layer_' + str(layer_index) + '"))model = tflite::GetModel(layer_' + str(layer_index) + ');\\\n'
+        super_header_file.write(macro_definition)
