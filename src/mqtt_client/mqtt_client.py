@@ -192,7 +192,7 @@ class MqttClient:
         message_data.received_timestamp = received_timestamp
         message_data.payload_size = MqttMessageData.get_bytes_size(message_data.payload)
         message_data.synthetic_latency = MqttMessageData.get_synthetic_latency()
-        message_data.latency = MqttMessageData.get_latency(message_data.received_timestamp, message_data.timestamp)
+        message_data.latency = MqttMessageData.get_latency(message_data.timestamp, message_data.received_timestamp)
         message_data.avg_speed = MqttMessageData.get_avg_speed(
             message_data.payload_size,
             message_data.latency,
