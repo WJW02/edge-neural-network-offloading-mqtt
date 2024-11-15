@@ -16,16 +16,16 @@ def track_inference_time(func):
     """
 
     @wraps(func)
-    def wrapper(self, layer_id: int, *args, **kwargs) -> object:
+    def wrapper(self, layer_id: int, layer_offset: int, *args, **kwargs) -> object:
         # Start the timer
         start_time = time.time()
         # Execute the original function (predict_single_layer)
-        result = func(self, layer_id, *args, **kwargs)
+        result = func(self, layer_id, layer_offset, *args, **kwargs)
         # Calculate the elapsed time
         elapsed_time = time.time() - start_time
         # Store the elapsed time in the inference_times dictionary
-        self.inference_times[layer_id] = elapsed_time
-        logger.debug(f"Edge Inference for layer [{layer_id}] took {elapsed_time:.4f} seconds")
+        self.inference_times[layer_id-layer_offset] = elapsed_time
+        logger.debug(f"Edge Inference for layer [{layer_id-layer_offset}] took {elapsed_time:.4f} seconds")
         return result
 
     return wrapper
@@ -113,7 +113,7 @@ class ModelManager:
         return size_in_bytes
 
     @track_inference_time
-    def predict_single_layer(self, layer_id: int, layer_input_data: object) -> object:
+    def predict_single_layer(self, layer_id: int, layer_offset: int, layer_input_data: object) -> object:
         """Predict the output of a single layer.
         Args:
             layer_id: The id of the layer.
@@ -121,7 +121,7 @@ class ModelManager:
         Returns:
             The output of the layer.
         """
-        logger.debug(f"Making a prediction for layer [{layer_id}]")
+        logger.debug(f"Making a prediction for layer [{layer_id-layer_offset}]")
         layer = self.get_model_layer(layer_id)
         # create an intermediate model with the current layer
         intermediate_model = tf.keras.Model(inputs=layer.input, outputs=layer.output)

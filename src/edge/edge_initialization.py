@@ -62,8 +62,8 @@ if __name__ == "__main__":
             else:
                 prediction_data = predictions[inbound_node.inbound_layers]
 
-        prediction = model_manager.predict_single_layer(layer_index, prediction_data)
-        layer_sizes[layer_index] = float(model_manager.get_layer_size_in_bytes(layer, prediction))
+        prediction = model_manager.predict_single_layer(layer_index, start_layer_offset, prediction_data)
+        layer_sizes[layer_index-start_layer_offset] = float(model_manager.get_layer_size_in_bytes(layer, prediction))
         predictions[layer] = prediction
 
     # save the inference times to a file
