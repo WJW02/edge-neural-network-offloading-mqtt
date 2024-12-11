@@ -18,11 +18,11 @@ def track_inference_time(func):
     @wraps(func)
     def wrapper(self, layer_id: int, layer_offset: int, *args, **kwargs) -> object:
         # Start the timer
-        start_time = time.time()
+        start_time = time.perf_counter()
         # Execute the original function (predict_single_layer)
         result = func(self, layer_id, layer_offset, *args, **kwargs)
         # Calculate the elapsed time
-        elapsed_time = time.time() - start_time
+        elapsed_time = time.perf_counter() - start_time
         # Store the elapsed time in the inference_times dictionary
         self.inference_times[layer_id-layer_offset] = elapsed_time
         logger.debug(f"Edge Inference for layer [{layer_id-layer_offset}] took {elapsed_time:.4f} seconds")
