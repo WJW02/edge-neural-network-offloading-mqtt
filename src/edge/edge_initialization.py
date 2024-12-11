@@ -1,24 +1,16 @@
 import json
 
 import tensorflow as tf
-from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import numpy as np
 
 from src.commons import OffloadingDataFiles
-from src.commons import InputDataFiles
+from src.commons import InputData
 from src.models.model_manager import ModelManager
 
 
 if __name__ == "__main__":
-    
-    def image_to_np_array(image_path: str = InputDataFiles.input_data_file_path):
-        input_image = load_img(image_path, color_mode="grayscale", target_size=(96, 96))
-        image_array = img_to_array(input_image)
-        image_array = np.array([image_array])
-        return image_array
-
     # original array (grayscale image with shape (1, 96, 96, 1))
-    image_array = image_to_np_array()
+    image_array = InputData().image_array
 
     # check the shape and dtype
     print(image_array.shape)  # Should print (1, 96, 96, 1)
