@@ -14,5 +14,6 @@ class InputDataFiles:
 class InputData:
     def __init__(self, image_path=InputDataFiles.input_data_file_path, color_mode="grayscale", target_size=(96, 96)): # Model input configuration
         input_image = load_img(image_path, color_mode=color_mode, target_size=target_size)
-        self.image_array = img_to_array(input_image)
-        self.image_array = np.array([self.image_array])
+        image_array = img_to_array(input_image)
+        image_array = np.array([image_array])
+        self.image_array = image_array / 255.0 # Normalize pixel values
