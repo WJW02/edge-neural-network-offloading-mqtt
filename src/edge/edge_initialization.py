@@ -11,6 +11,7 @@ from src.models.model_manager import ModelManager
 if __name__ == "__main__":
     # original array (grayscale image with shape (1, 96, 96, 1))
     image_array = InputData().image_array
+    image_array = image_array / 255.0 # Normalize pixel values
 
     # check the shape and dtype
     print(image_array.shape)  # Should print (1, 96, 96, 1)
