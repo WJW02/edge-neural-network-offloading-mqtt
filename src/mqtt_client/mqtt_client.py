@@ -142,7 +142,7 @@ class MqttClient:
             for l_id, inference_time in enumerate(message_data.device_layers_inference_time):
                 device_inference_times[f"layer_{l_id}"] = inference_time
             with open(OffloadingDataFiles.data_file_path_device, 'w') as f:
-                json.dump(device_inference_times, f)
+                json.dump(device_inference_times, f, indent=4)
             # end the computation
             self.end_computation(ask_device_id=message_data.device_id, message_id=message_data.message_id)
 
