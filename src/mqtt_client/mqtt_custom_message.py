@@ -64,11 +64,11 @@ class MqttMessageData:
             logger.error(f"Failed to save data to {file_path}: {e}")
 
     @staticmethod
-    def get_latency(timestamp: str, recieved_timestamp: str) -> tuple[float, dict]:
+    def get_latency(timestamp: str, received_timestamp: str) -> tuple[float, dict]:
         # NTP timestamps as strings (representing seconds since 1900)
         # convert the NTP timestamps from string to float
         ntp_timestamp_1 = float(timestamp)
-        ntp_timestamp_2 = float(recieved_timestamp)
+        ntp_timestamp_2 = float(received_timestamp)
         # calculate the duration between the two NTP timestamps
         duration_seconds = ntp_timestamp_2 - ntp_timestamp_1
         # convert the duration to a readable format

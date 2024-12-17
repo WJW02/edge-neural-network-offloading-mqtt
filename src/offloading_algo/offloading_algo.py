@@ -47,13 +47,13 @@ class OffloadingAlgo:
         logger.info(f"Performing Edge Only Offloading:")
 
         initial_cost = 0
-        first_layer_size = self.layers_sizes[0]
-        edge_computation_cost = sum(self.inference_time_edge[:self.num_layers + 1])
+        layer_data_size = 0
+        edge_computation_cost = sum(self.inference_time_edge[:self.num_layers])
 
-        self.lowest_evaluation = self.evaluation(
+        self.evaluation(
             initial_cost=initial_cost,
-            layer_data_size=first_layer_size,
-            avg_speed=self.avg_speed,
+            layer_data_size=layer_data_size,
+            avg_speed=0,
             edge_computation_cost=edge_computation_cost,
         )
 
@@ -63,10 +63,10 @@ class OffloadingAlgo:
              None
         """
         logger.info(f"Performing Partial Offloading:")
-        for layer in range(0, self.num_layers - 1):
-            initial_cost = (0 if layer == 0 else sum(self.inference_time_device[:layer]))
-            edge_computation_cost = sum(self.inference_time_edge[layer:self.num_layers])
-            layer_data_size = self.layers_sizes[layer + 1]
+        for layer in range(0, self.num_layers-1):
+            initial_cost = sum(self.inference_time_device[:layer+1])
+            edge_computation_cost = sum(self.inference_time_edge[layer+1:self.num_layers])
+            layer_data_size = self.layers_sizes[layer]
 
             evaluation = self.evaluation(
                 initial_cost=initial_cost,
@@ -76,8 +76,8 @@ class OffloadingAlgo:
             )
 
             if evaluation < self.lowest_evaluation:
-                self.lowest_evaluation = evaluation
                 self.best_offloading_layer = layer
+                self.lowest_evaluation = evaluation
 
     def device_only_evaluation(self):
         """Perform Device Only Offloading
@@ -85,9 +85,10 @@ class OffloadingAlgo:
              None
         """
         logger.info(f"Performing Device Only Offloading:")
-        initial_cost = sum(self.inference_time_device[:self.num_layers + 1])
-        layer_data_size = self.layers_sizes[self.num_layers]
+        initial_cost = sum(self.inference_time_device[:self.num_layers])
+        layer_data_size = self.layers_sizes[self.num_layers-1]
         edge_computation_cost = 0
+
         # No Offloading: Device Only Computation
         last_evaluation = self.evaluation(
             initial_cost=initial_cost,
@@ -95,8 +96,9 @@ class OffloadingAlgo:
             avg_speed=self.avg_speed,
             edge_computation_cost=edge_computation_cost,
         )
+
         if last_evaluation < self.lowest_evaluation:
-            self.best_offloading_layer = self.num_layers
+            self.best_offloading_layer = self.num_layers-1
             self.lowest_evaluation = last_evaluation
 
     def static_offloading(self) -> int:
@@ -107,7 +109,7 @@ class OffloadingAlgo:
         logger.info(f"Performing Static Offloading:")
         logger.info(f"Total Neural Network Layers: {self.num_layers}")
 
-        self.edge_only_computation_evaluation()
+        self.edge_only_computation_evaluation() # Not considered for best offloading layer evaluation
         self.mixed_computation_evaluation()
         self.device_only_evaluation()
 

@@ -4,7 +4,7 @@ import time
 
 import ntplib
 import paho.mqtt.client as mqtt
-from offloading_algo.offloading_algo import OffloadingAlgo
+from src.offloading_algo.offloading_algo import OffloadingAlgo
 
 from src.commons import OffloadingDataFiles
 from src.logger.log import logger
@@ -121,7 +121,7 @@ class MqttClient:
             # run offloading algorithm
             offloading_algo = OffloadingAlgo(
                 avg_speed=message_data.avg_speed,
-                num_layers=len(self.layers_sizes) - 1,
+                num_layers=len(self.layers_sizes),
                 layers_sizes=list(self.layers_sizes),
                 inference_time_device=list(self.device_inference_times),
                 inference_time_edge=list(self.edge_inference_times)
