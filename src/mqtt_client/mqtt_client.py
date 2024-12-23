@@ -3,10 +3,16 @@ import random
 import time
 
 import ntplib
+import numpy as np
 import paho.mqtt.client as mqtt
+from src.edge.edge_initialization import Edge
+from src.device.device_initialization import Device
 from src.offloading_algo.offloading_algo import OffloadingAlgo
+from PIL import Image
 
 from src.commons import OffloadingDataFiles
+from src.commons import InputData
+from src.commons import InputDataFiles
 from src.logger.log import logger
 from src.mqtt_client.mqtt_configs import MqttClientConfig, Topics, DefaultMessages
 from src.mqtt_client.mqtt_custom_message import MqttMessageData
@@ -97,10 +103,20 @@ class MqttClient:
         return str(ntp_timestamp)
 
     def on_message(self, client, userdata, message):
+        received_timestamp = self.get_ntp_timestamp()
+
+        # Save input image
+        if message.topic == Topics.device_input.value:
+            image_array = InputData.make_array(message.payload)
+            image = Image.fromarray(image_array, 'RGB')
+            image.save(InputDataFiles.input_data_file_path)
+            message_data = {"topic": "device_01/input_data", "message_content": "InputImage", "device_id": "device_01"}
+            MqttMessageData.save_to_file(OffloadingDataFiles.evaluation_file_path, message_data)
+            logger.debug("Input image saved")
+            return
 
         # obtain message data if the message is JSON valid
         try:
-            received_timestamp = self.get_ntp_timestamp()
             message_data = MqttMessageData.from_raw(message.topic, message.payload)
         except json.JSONDecodeError:
             logger.error(f"Received non-JSON message from {message.topic}: {message.payload.decode()}")
@@ -118,6 +134,7 @@ class MqttClient:
 
         # run offloading algorithm and ask for prediction after the device sends the registration message
         if message_data.topic == Topics.registration.value:
+            Device.initialization()
             # run offloading algorithm
             offloading_algo = OffloadingAlgo(
                 avg_speed=message_data.avg_speed,
@@ -127,8 +144,8 @@ class MqttClient:
                 inference_time_edge=list(self.edge_inference_times)
             )
             best_offloading_layer = offloading_algo.static_offloading()
-            # ask for prediction
-            self.ask_for_prediction(
+            # send best offloading layer index
+            self.send_offloading_layer_index(
                 ask_device_id=message_data.device_id,
                 message_id=message_data.message_id,
                 best_offloading_layer=best_offloading_layer,
@@ -143,23 +160,32 @@ class MqttClient:
                 device_inference_times[f"layer_{l_id}"] = inference_time
             with open(OffloadingDataFiles.data_file_path_device, 'w') as f:
                 json.dump(device_inference_times, f, indent=4)
-            # end the computation
-            self.end_computation(ask_device_id=message_data.device_id, message_id=message_data.message_id)
+            # finish inference
+            prediction = Edge.run_inference(message_data.offloading_layer_index, np.array(message_data.layer_output))
+            logger.debug(prediction.tolist())
+            # run offloading algorithm
+            offloading_algo = OffloadingAlgo(
+                avg_speed=message_data.avg_speed,
+                num_layers=len(self.layers_sizes),
+                layers_sizes=list(self.layers_sizes),
+                inference_time_device=list(self.device_inference_times),
+                inference_time_edge=list(self.edge_inference_times)
+            )
+            best_offloading_layer = offloading_algo.static_offloading()
+            # send best offloading layer index
+            self.send_offloading_layer_index(
+                ask_device_id=message_data.device_id,
+                message_id=message_data.message_id,
+                best_offloading_layer=best_offloading_layer,
+            )
 
-    def ask_for_prediction(self, ask_device_id, message_id, best_offloading_layer: int):
-        logger.debug(f"Sending inference request to {ask_device_id}")
-        message_data = DefaultMessages.ask_for_inference_msg
+    def send_offloading_layer_index(self, ask_device_id, message_id, best_offloading_layer: int):
+        logger.debug(f"Sending offloading layer index to {ask_device_id}")
+        message_data = DefaultMessages.offloading_layer_msg
         message_data["timestamp"] = self.get_ntp_timestamp()
         message_data['message_id'] = message_id
         message_data['offloading_layer_index'] = best_offloading_layer
-        self.publish(Topics.device_inference.value, json.dumps(message_data))
-
-    def end_computation(self, ask_device_id, message_id):
-        logger.debug(f"Sending end computation to {ask_device_id}")
-        message_data = DefaultMessages.end_computation_msg
-        message_data["timestamp"] = self.get_ntp_timestamp()
-        message_data['message_id'] = message_id
-        self.publish(Topics.end_computation.value, json.dumps(message_data))
+        self.publish(Topics.offloading_layer.value, json.dumps(message_data))
 
     def load_stats(self):
         """ Loads the offloading stats from the JSON files """

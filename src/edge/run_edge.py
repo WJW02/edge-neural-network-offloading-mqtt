@@ -1,10 +1,14 @@
 from src.logger.log import logger
 
+from src.edge.edge_initialization import Edge
 from src.mqtt_client.mqtt_client import MqttClient
 from src.mqtt_client.mqtt_configs import MqttClientConfig
 
 if __name__ == "__main__":
     logger.info("Starting the [EDGE] MQTT client")
+
+    # initialize edge inference times
+    Edge.initialization()
 
     # start the MQTT client
     mqtt_client = MqttClient(
