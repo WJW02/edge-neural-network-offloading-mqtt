@@ -46,13 +46,13 @@ class ModelManager:
         inference_times: A dictionary to store the inference times for each layer.
     """
 
-    def __init__(self, save_path: str = ModelManagerConfig.SAVE_PATH, model_path: str = ModelManagerConfig.MODEL_PATH):
+    def __init__(self, save_path: str = ModelManagerConfig.SAVE_PATH, model_path: str = ModelManagerConfig.MODEL_PATH, inference_times: dict = {}):
         self.save_path = save_path
         self.model_path = model_path
         self.num_layers = None
         self.model = None
         # dictionary to store inference times for each layer
-        self.inference_times = {}
+        self.inference_times = inference_times
 
     def load_model(self, model_path: str = ModelManagerConfig.MODEL_PATH):
         """Load the model from the given path.
