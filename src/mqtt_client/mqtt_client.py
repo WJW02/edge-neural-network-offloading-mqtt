@@ -45,7 +45,8 @@ class MqttClient:
         # Set up NTP client
         self.ntp_client = ntplib.NTPClient()
         self.ntp_server = ntp_server
-        self.start_timestamp = self.get_ntp_timestamp()
+        self.offset = self.sync_with_ntp()
+        self.start_timestamp = self.get_current_time()
 
         # Stats
         self.layers_sizes = []
@@ -90,20 +91,24 @@ class MqttClient:
             logger.debug(f"Initial NTP timestamp from NTP server {self.ntp_server}: {self.start_timestamp}")
         else:
             logger.debug(f"Connection failed with code {rc}")
-
-    def get_ntp_timestamp(self) -> float:
+    
+    def sync_with_ntp(self) -> float:
         ntp_timestamp = None
         while ntp_timestamp is None:
             try:
                 response = self.ntp_client.request(self.ntp_server)
-                # Get the current NTP time (seconds since 1900)
-                ntp_timestamp = response.tx_time
+                # Get the offset between local clock time and ntp server time (seconds since 1900)
+                offset = response.offset
+                logger.debug(f"Synchronized with NTP server. Offset: {offset} seconds")
+                return offset
             except ntplib.NTPException as _:
                 time.sleep(1)
-        return str(ntp_timestamp)
+
+    def get_current_time(self) -> float:
+        return time.time() + self.offset
 
     def on_message(self, client, userdata, message):
-        received_timestamp = self.get_ntp_timestamp()
+        received_timestamp = self.get_current_time()
 
         # Save input image
         if message.topic == Topics.device_input.value:
@@ -182,7 +187,7 @@ class MqttClient:
     def send_offloading_layer_index(self, ask_device_id, message_id, best_offloading_layer: int):
         logger.debug(f"Sending offloading layer index to {ask_device_id}")
         message_data = DefaultMessages.offloading_layer_msg
-        message_data["timestamp"] = self.get_ntp_timestamp()
+        message_data["timestamp"] = self.get_current_time()
         message_data['message_id'] = message_id
         message_data['offloading_layer_index'] = best_offloading_layer
         self.publish(Topics.offloading_layer.value, json.dumps(message_data))

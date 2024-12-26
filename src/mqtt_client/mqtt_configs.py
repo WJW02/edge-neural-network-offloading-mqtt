@@ -22,8 +22,8 @@ class MqttClientConfig:
         Topics.device_input.value,
         Topics.device_inference_result.value
     )
+    ntp_server: str = "0.it.pool.ntp.org"
     protocol: mqtt.MQTTv311 = mqtt.MQTTv311
-    ntp_server: str = "time.google.com"
 
 
 @dataclass
