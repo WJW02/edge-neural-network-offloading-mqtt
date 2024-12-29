@@ -124,7 +124,7 @@ class MqttClient:
         try:
             message_data = MqttMessageData.from_raw(message.topic, message.payload)
         except json.JSONDecodeError:
-            logger.error(f"Received non-JSON message from {message.topic}: {message.payload.decode()}")
+            logger.error(f"Failed to decode JSON from payload on topic {message.topic}")
             return
 
         # check if the message is valid - sent after the edge mqtt client is started
@@ -133,7 +133,7 @@ class MqttClient:
         logger.debug(f"Received a valid message")
 
         # Extend message data
-        message_data = self.extend_message_data(message_data, received_timestamp)
+        message_data = self.extend_message_data(message_data, received_timestamp, message.payload)
         # Save message data to file
         MqttMessageData.save_to_file(OffloadingDataFiles.evaluation_file_path, message_data.to_dict())
 
@@ -166,8 +166,8 @@ class MqttClient:
             with open(OffloadingDataFiles.data_file_path_device, 'w') as f:
                 json.dump(device_inference_times, f, indent=4)
             # finish inference
-            prediction = Edge.run_inference(message_data.offloading_layer_index, np.array(message_data.layer_output))
-            logger.debug(prediction.tolist())
+            prediction = Edge.run_inference(message_data.offloading_layer_index, np.array(message_data.layer_output, dtype=np.float32))
+            logger.debug(f"Prediction: {prediction.tolist()}")
             # run offloading algorithm
             offloading_algo = OffloadingAlgo(
                 avg_speed=message_data.avg_speed,
@@ -209,7 +209,7 @@ class MqttClient:
         logger.debug(f"Loaded stats data")
 
     @staticmethod
-    def extend_message_data(message_data: MqttMessageData, received_timestamp: float) -> MqttMessageData:
+    def extend_message_data(message_data: MqttMessageData, received_timestamp: float, payload) -> MqttMessageData:
         """Extend the message data with additional information.
 
         Args:
@@ -221,7 +221,7 @@ class MqttClient:
         """
         # update stats info
         message_data.received_timestamp = received_timestamp
-        message_data.payload_size = MqttMessageData.get_bytes_size(message_data.payload)
+        message_data.payload_size = MqttMessageData.get_bytes_size(payload)
         message_data.synthetic_latency = MqttMessageData.get_synthetic_latency()
         message_data.latency = MqttMessageData.get_latency(message_data.timestamp, message_data.received_timestamp)
         message_data.avg_speed = MqttMessageData.get_avg_speed(

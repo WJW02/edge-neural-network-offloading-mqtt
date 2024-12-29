@@ -4,8 +4,10 @@ import random
 from dataclasses import dataclass
 
 import pandas as pd
+import struct
 
 from src.logger.log import logger
+from src.mqtt_client.mqtt_configs import Topics
 
 
 @dataclass
@@ -30,13 +32,39 @@ class MqttMessageData:
     def from_raw(topic: str, payload: bytes):
         """Parse the raw message payload into a MessageDataInput instance."""
         try:
-            # decode the payload from bytes to string and parse as JSON
-            message_data = json.loads(payload.decode())
+            if topic == Topics.device_inference_result.value:
+                message_data = {}
+                message_content = {}
+
+                # decode the payload from bytes to values and parse as JSON
+                message_data["timestamp"] = struct.unpack('d', payload[:8])[0]
+                offset = 8
+                message_data["device_id"] = payload[offset:offset+9].decode()
+                offset += 9
+                message_data["message_id"] = payload[offset:offset+4].decode()
+                offset += 4
+                message_content["offloading_layer_index"] = struct.unpack('i', payload[offset:offset+4])[0]
+                offset += 4
+                layer_output_size = struct.unpack('I', payload[offset:offset+4])[0]
+                offset += 4
+                message_content["layer_output"] = struct.unpack(f'<{int(layer_output_size/4)}f', payload[offset:offset+layer_output_size])
+                offset += layer_output_size
+                layers_inference_time_size = struct.unpack('i', payload[offset:offset+4])[0]
+                offset += 4
+                message_content["layers_inference_time"] = struct.unpack(f'<{int(layers_inference_time_size/4)}f', payload[offset:offset+layers_inference_time_size])
+                message_data["message_content"] = message_content
+
+                decoded_payload = json.dumps(message_data)
+            else:
+                # decode the payload from bytes to string and parse as JSON
+                decoded_payload = payload.decode()
+                message_data = json.loads(decoded_payload)
+
             message_content = message_data["message_content"]
             # return an instance of MessageDataInput with extracted fields
             return MqttMessageData(
                 topic=topic,
-                payload=payload.decode(),
+                payload=decoded_payload,
                 device_id=message_data["device_id"],
                 message_id=message_data["message_id"],
                 message_content=message_content,
@@ -44,8 +72,7 @@ class MqttMessageData:
             )
         except json.JSONDecodeError:
             # handles payload that cannot be parsed as JSON
-            logger.error(f"Failed to decode JSON from payload on topic {topic}")
-            return None
+            raise
 
     def to_dict(self):
         return self.__dict__
