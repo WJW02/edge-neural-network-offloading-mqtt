@@ -122,11 +122,22 @@ class ModelManager:
             The output of the layer.
         """
         logger.debug(f"Making a prediction for layer [{layer_id-layer_offset}]")
-        layer = self.get_model_layer(layer_id)
-        # create an intermediate model with the current layer
-        intermediate_model = tf.keras.Model(inputs=layer.input, outputs=layer.output)
-        layer_output = intermediate_model.predict(layer_input_data)
-        return layer_output
+
+        # initialize interepreter with layer tflite model
+        interpreter = tf.lite.Interpreter(model_path=f'../models/test/test_model/layers/tflite/submodel_{layer_id-layer_offset}.tflite')
+        interpreter.allocate_tensors()
+        input_details = interpreter.get_input_details()
+        output_details = interpreter.get_output_details()
+
+        # set input tensor
+        for i, input_detail in enumerate(input_details):
+            interpreter.set_tensor(input_detail['index'], layer_input_data[i].reshape(input_detail['shape']))
+
+        # run inference
+        interpreter.invoke()
+
+        # return prediction
+        return interpreter.get_tensor(output_details[0]['index'])
 
     def save_inference_times(self, save_path: str | None = None):
         """Save the inference times to a JSON file.

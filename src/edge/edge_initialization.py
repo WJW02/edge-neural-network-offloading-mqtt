@@ -18,7 +18,6 @@ class Edge:
         # load model inference times
         with open(OffloadingDataFiles.data_file_path_edge, 'r') as file:
             edge_inference_times = json.load(file)
-            edge_inference_times = list({k: v for k, v in edge_inference_times.items()}.values())
 
         # load the model and make predictions
         model_manager = ModelManager(inference_times=edge_inference_times)
@@ -47,17 +46,17 @@ class Edge:
         input_data = offloading_layer_output
 
         for layer_index, layer in enumerate(layers_to_use, start=start_layer_index):
+            prediction_data = []
             if layer_index == start_layer_index:   # if it's the starting layer
-                prediction_data = input_data
+                prediction_data.append(input_data)
             else:
                 # Get the previous layers' output tensor
                 inbound_node = layer._inbound_nodes[0]
                 if isinstance(inbound_node.inbound_layers, list):
-                    prediction_data = []
                     for inbound_layer in inbound_node.inbound_layers:
                         prediction_data.append(predictions[inbound_layer])
                 else:
-                    prediction_data = predictions[inbound_node.inbound_layers]
+                    prediction_data.append(predictions[inbound_node.inbound_layers])
 
             prediction = model_manager.predict_single_layer(layer_index, start_layer_offset, prediction_data)
             predictions[layer] = prediction
@@ -65,7 +64,7 @@ class Edge:
         # save the inference times to a file
         model_manager.save_inference_times()
 
-        return predictions[layers_to_use[num_of_layers-1]]
+        return predictions[layers_to_use[num_of_layers-start_layer_index-1]]
 
     @staticmethod
     def initialization():
@@ -101,17 +100,17 @@ class Edge:
         input_data = image_array
 
         for layer_index, layer in enumerate(layers_to_use, start=start_layer_index):
+            prediction_data = []
             if layer_index == start_layer_index:   # if it's the first layer
-                prediction_data = input_data
+                prediction_data.append(input_data)
             else:
                 # Get the previous layers' output tensor
                 inbound_node = layer._inbound_nodes[0]
                 if isinstance(inbound_node.inbound_layers, list):
-                    prediction_data = []
                     for inbound_layer in inbound_node.inbound_layers:
                         prediction_data.append(predictions[inbound_layer])
                 else:
-                    prediction_data = predictions[inbound_node.inbound_layers]
+                    prediction_data.append(predictions[inbound_node.inbound_layers])
 
             prediction = model_manager.predict_single_layer(layer_index, start_layer_offset, prediction_data)
             layer_sizes[layer_index-start_layer_offset] = float(model_manager.get_layer_size_in_bytes(layer, prediction))
