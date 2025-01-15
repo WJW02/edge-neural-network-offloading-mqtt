@@ -115,8 +115,15 @@ class MqttClient:
             image_array = InputData.make_array(message.payload)
             image = Image.fromarray(image_array, 'RGB')
             image.save(InputDataFiles.input_data_file_path)
-            message_data = {"topic": "device_01/input_data", "message_content": "InputImage", "device_id": "device_01"}
-            MqttMessageData.save_to_file(OffloadingDataFiles.evaluation_file_path, message_data)
+            message_data = MqttMessageData(
+                topic=message.topic,
+                payload="InputImage",
+                device_id="device_01",
+                message_id=None,
+                message_content="InputImage",
+                timestamp=None,
+            )
+            MqttMessageData.save_to_file(OffloadingDataFiles.evaluation_file_path, message_data.to_dict())
             logger.debug("Input image saved")
             return
 
@@ -168,6 +175,7 @@ class MqttClient:
             # finish inference
             prediction = Edge.run_inference(message_data.offloading_layer_index, np.array(message_data.layer_output, dtype=np.float32))
             logger.debug(f"Prediction: {prediction.tolist()}")
+            MqttMessageData.save_to_file(OffloadingDataFiles.web_file_path, message_data.to_dict())
             # run offloading algorithm
             offloading_algo = OffloadingAlgo(
                 avg_speed=message_data.avg_speed,
