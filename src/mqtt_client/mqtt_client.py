@@ -9,6 +9,8 @@ from src.edge.edge_initialization import Edge
 from src.device.device_initialization import Device
 from src.offloading_algo.offloading_algo import OffloadingAlgo
 from PIL import Image
+import threading
+import queue
 
 from src.commons import OffloadingDataFiles
 from src.commons import InputData
@@ -53,6 +55,11 @@ class MqttClient:
         self.edge_inference_times = []
         self.device_inference_times = []
         self.load_stats()
+        
+        # Set up helper thread
+        self.task_queue = queue.Queue()
+        self.thread = threading.Thread(target=self._worker, daemon=True)
+        self.thread.start()
 
     @staticmethod
     def create_random_payload():
@@ -103,13 +110,26 @@ class MqttClient:
                 return offset
             except ntplib.NTPException as _:
                 time.sleep(1)
+        threading.Timer(600, self.sync_with_ntp).start()
 
     def get_current_time(self) -> float:
         return time.time() + self.offset
+    
+    def _worker(self):
+        while True:
+            task = self.task_queue.get()
+            task()
+            self.task_queue.task_done()
 
     def on_message(self, client, userdata, message):
         received_timestamp = self.get_current_time()
 
+        def task():
+            self.handle_message_task(message, received_timestamp)
+
+        self.task_queue.put(task)   # Submit the task to the worker thread queue
+
+    def handle_message_task(self, message, received_timestamp):
         # Save input image
         if message.topic == Topics.device_input.value:
             image_array = InputData.make_array(message.payload)
