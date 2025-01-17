@@ -1,6 +1,5 @@
 import json
 import os
-import random
 from dataclasses import dataclass
 
 import pandas as pd
@@ -107,7 +106,7 @@ class MqttMessageData:
 
     @staticmethod
     def get_synthetic_latency() -> float:
-        return random.uniform(1, 1111)
+        return 1
 
     @staticmethod
     def get_avg_speed(payload_size: float, latency: float, synthetic_latency: float) -> float:
