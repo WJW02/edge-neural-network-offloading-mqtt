@@ -45,6 +45,14 @@ with open(OffloadingDataFiles.data_file_path_edge, 'r') as file:
   edge_inference_times = list({k: v for k, v in edge_inference.items()}.values())
   edge_inference_layers = list(range(0, len(edge_inference_times)))
 
+device_inference_time_total = 0
+for inference_time in device_inference_times:
+  device_inference_time_total += inference_time
+
+edge_inference_time_total = 0
+for inference_time in edge_inference_times:
+  edge_inference_time_total += inference_time
+
 device_data_frame = pd.DataFrame({
   'Inference time (s)': device_inference_times,
   'Layer': device_inference_layers
@@ -57,10 +65,10 @@ edge_data_frame = pd.DataFrame({
 
 doublecol = st.columns(2)
 
-doublecol[0].header('Device inference times')
+doublecol[0].header(f'Device inference times ({device_inference_time_total:,.4f} s)')
 doublecol[0].bar_chart(device_data_frame, y='Inference time (s)', x='Layer')
 
-doublecol[1].header('Edge inference times')
+doublecol[1].header(f'Edge inference times ({edge_inference_time_total:,.4f} s)')
 doublecol[1].bar_chart(edge_data_frame, y='Inference time (s)', x='Layer')
 
 doublecol[0].header('Network speed')
