@@ -57,7 +57,6 @@
 #include "layer_56.h"
 #include "layer_57.h"
 #include "layer_58.h"
-#include "layer_59.h"
 #define LOAD_LAYER() if(layer_name.equals("layer_0"))model = tflite::GetModel(layer_0);\
 if(layer_name.equals("layer_1"))model = tflite::GetModel(layer_1);\
 if(layer_name.equals("layer_2"))model = tflite::GetModel(layer_2);\
@@ -117,4 +116,3 @@ if(layer_name.equals("layer_55"))model = tflite::GetModel(layer_55);\
 if(layer_name.equals("layer_56"))model = tflite::GetModel(layer_56);\
 if(layer_name.equals("layer_57"))model = tflite::GetModel(layer_57);\
 if(layer_name.equals("layer_58"))model = tflite::GetModel(layer_58);\
-if(layer_name.equals("layer_59"))model = tflite::GetModel(layer_59);\
