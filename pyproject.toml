@@ -22,6 +22,8 @@ dependencies = [
     "h5py==3.11.0",
     "ntplib",
     "pillow",
+    "streamlit",
+    "streamlit_autorefresh",
 ]
 
 # Define optional dependencies like testing and CUDA support
